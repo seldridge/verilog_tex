@@ -1,0 +1,399 @@
+\documentclass[10pt,twocolumn]{article}
+\title{Summary of Key Verilog Features (IEEE 1364) \thanks{Written by Zafar M. Takhirov and Schuyler Eldridge, ICSG@BU}}
+%\author{Zafar. M. Takhirov \and Schuyler Eldridge}
+%\date{17 September 2012}
+\date{\vspace{-5ex}}
+\usepackage{listings}
+
+%\usepackage{fancyhdr}
+
+\usepackage[margin=0.3in,landscape]{geometry}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\setlength{\columnsep}{0.5in}
+\setlength{\columnseprule}{0.5pt}
+\maketitle
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\lstset{
+        language=Verilog,
+        %numbers=left, 
+        %numberstyle=\tiny, 
+        stepnumber=1, 
+        numbersep=5pt,
+        basicstyle=\ttfamily,
+        %framexleftmargin=5mm, 
+        frame=single,}  
+%       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Module}\vspace{-10pt}
+Encapsulates functionality; may be nested to any depth
+\begin{lstlisting}
+module module_name (list of ports);
+        // Declarations
+        Port modes: input, output, inout identifier;
+        Nets (e.g., wire A[3:0];)
+        Register variable (e.g., reg B[31:0];)
+        Constants: (e.g., parameter size=8;)
+        Named events
+        Continuous assignments (e.g. assign sum = A + B;)
+        Behaviors always (cyclic), initial (single-pass)
+        specify ... endspecify
+        function ... endfunction
+        task ... endtask
+        // Instantiations
+        primitives
+        modules
+endmodule
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Multi-Input Primitives}\vspace{-10pt}
+\begin{lstlisting}
+and (out, in1, in2, ..., inN);
+nand (out, in1, in2, ..., inN);
+or (out, in1, in2, ..., inN);
+nor (out, in1, in2, ..., inN);
+xor (out, in1, in2, ..., inN);
+xnor (out, in1, in2, ..., inN);
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Three-State  Multioutput Primitives}\vspace{-10pt}
+\begin{lstlisting}
+buf (out1, out2, ..., outN, in);        // buffer
+not (out1, out2, ..., outN, in);        // inverter
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Three-State  Multioutput Primitives}\vspace{-10pt}
+\begin{lstlisting}
+bufif0 (out, in, control); bufif1 (out, in, control);
+notif0 (out, in, control); notif1 (out, in, control);
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Pullups and Pulldowns}\vspace{-10pt}
+\begin{lstlisting}
+pullup (out_y); pulldown (out_y);
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Propagation Delays}\vspace{-10pt}
+\begin{lstlisting}
+Single delay:           and #3 G1 (y, a, b, c);
+Rise/fall:              and #(3,6) G2 (y, a, b, c);
+Rise/fall/turnoff:      bufif0 #(3,6,5) (y, x_in, en);
+Min:typ:Max:            bufif1 #(3:4:5, 4:5:6, 7:8:9)
+                                (y, x_in, en);
+\end{lstlisting}
+Command line options for single delay value simulation:
+\textbf{+maxdelays, +typdelays, +mindelays}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Concurrent Behavioral Statements}\vspace{-10pt}
+May execute a level-sensitive assignment of value to a net (keyword:~\textbf{assign}), or may execute the statements of a cyclic (keyword:~\textbf{always}) or single-pass (keyword:\textbf{initial}) behavior. The statements execute sequentially, subject to level-sensitive or edge-sensitive event control expressions.
+\subsubsection*{Syntax}\vspace{-10pt}
+\begin{lstlisting}
+assign net_name = [expression];
+always begin [procedural statements] end
+initial begin [precedural statements] end
+\end{lstlisting}
+Cyclic(\textbf{always}) and single-pass (\textbf{initial}) behaviors may be level sensitive and/or edge sensitive
+\subsubsection*{Edge sensitive}\vspace{-10pt}
+\begin{lstlisting}
+always @ (posedge clock)
+        q <= data;
+\end{lstlisting}
+\subsubsection*{Level sensitive}\vspace{-10pt}
+\begin{lstlisting}
+always @ (enable or data)
+        q <= data;
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Data Types: Nets and Registers}\vspace{-10pt}
+\textbf{Nets:} Establish structural connectivity between instantiated primitives and/or modules; may be target of a continuous assignment; e.g., \textbf{wire, tri, wand, wor.} \\
+Value is determined during simulation by the driver of the net; e.g., a primitive or a continuous assignment. \\
+Example: 
+\begin{lstlisting}
+wire Y = A + B;
+\end{lstlisting}
+\textbf{Registers:} Store information and retain value until reassigned.\\
+Value is determined by an assignment made by a procedural statement.\\
+Value is retained until a new assignment is made; e.g., \textbf{reg, integer, real, realtime, time.}\\
+Example:
+\begin{lstlisting}
+always @ (posege clock)
+        if (reset) q_out <= 0;
+                else q_out <= data_in;
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Procedural Statements}\vspace{-10pt}
+Describe logic abstractly; statements execute sequentially to assign value to variables.
+\begin{lstlisting}
+if (expression_is_true) statement_1; else statement_2;
+case (case_expression)
+        case_item_0: statement_0;
+        case_item_1: begin
+                statement_1_0;
+                statement_1_1;
+        end
+        default: statement;
+endcase
+for (conditions) statement;
+repeat constant_expression statement;
+while (expression_is_true) statement;
+forever statement;
+fork statements join //execute in parallel
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Assignments}\vspace{-10pt}
+\textbf{Continuous:} Continuously assigns the value of an expression to a net.\\
+\textbf{Procedural (Blocking):} Uses the = operator; executes statements sequentially; a statement cannot execute until the preceding statement completes execution. Value is assigned immediately.\\
+\textbf{Procedural (Nonblocking):} Uses the <= operator; executes statements concurrently, independent of the order in which they are listed. Values are assigned concurrently.\\
+\textbf{Procedural (Continuous):} \\
+\textbf{assign ... deassign} overrides procedural assignments to a net. \\
+\textbf{force ... release} overrides all other assignments to a net or a register
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Operators}\vspace{-10pt}
+\begin{center}
+\begin{tabular}{ll|ll}
+\{\}~\{\{\}\}   & concatenation      & $\mid$                   & bitwise or \\
++~-~*~/         & arithmetic         & \^{}                     & bitwise exclusive-or \\
+\%              & modulus            & \^{}$\sim$ or $\sim$\^{} & bitwise equivalence \\
+$> \geq < \leq$ & relational         & \&                       & reduction and \\
+!               & logical negation   & ~\&                      & reduction nand \\
+\&\&            & logical and        & $\mid$                   & reduction or \\
+$\mid\mid$      & logical or         & $\sim\mid$               & reduction nor \\
+==              & logical equality   & \^{}                     & reduction exclusive-or \\
+!=              & logical inequality & \^{}$\sim$ or $\sim$\^{} & reduction exclusive-nor \\
+===             & case equality      & $\ll$                    & left shift \\
+!==             & case inequality    & $\gg$                    & right shift \\
+$\sim$          & bitwise negation   & ?:                       & conditional \\
+\&              & bitwise and        & or                       & event or
+\end{tabular}
+\end{center}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Specify Block}\vspace{-10pt}
+\subsection*{Example: Module Path Delays}\vspace{-10pt}
+\begin{lstlisting}
+specify
+        // specparam declarations (min:typ:max)
+        specparam t_r = 3:4:5, t_f = 4:5:6;
+        ((A,B) *> Y) = (t_r, t_f);      // full
+        (Bus_1 => Bus_1) = (t_r, t_f);  // parallel
+        if (state == S0) (a,b *> y) = 2;        // state dep
+        (posedge clk => (y -: d_in)) = (3,4);   // edge
+endspecify
+\end{lstlisting}
+\subsection*{Example: Timing Checks}\vspace{-10pt}
+\begin{lstlisting}
+specify
+        specparam t_setup = 3:4:5, t_hold = 4:5:6;
+        $setup (data, posedge clock, t_setup);
+        $hold (posedge clock, data, t_hold);
+endspecify
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Memory}\vspace{-10pt}
+Declares an array of words.
+\subsection*{Example: Memory declaration and readout}\vspace{-10pt}
+\begin{lstlisting}
+module memory_read_display();
+        reg[31:0] mem_array[1:1024];
+        integer k;
+        initial begin
+                // read contents of mem_array from 
+                // a file in hex format
+                $readmemh("mem_contents.dat", mem_array);
+                // display contents of mem_array
+                for (k = 1; k <= 1024; k = k + 1)
+                        $display("word[%d]=%h", k, 
+                                mem_array[k]);
+        end
+endmodule
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Concurrency and Race Conditions}\vspace{-10pt}
+Indeterminate outcomes result from race conditions when multiple behaviors use the procedural assignment operator ($=$) to reference (read) and assign value to teh same variable at the same time.
+\subsection*{Example (with race):}\vspace{-10pt}
+\begin{lstlisting}
+always @ (posedge clock) a = b;
+always @ (posedge clock) b = a;
+\end{lstlisting}
+Use nonblocking assignment operator ($<=$) to eliminate race conditions; assignments are independent of the order of the behaviors and the order of the statements.
+\subsection*{Example:}\vspace{-10pt}
+\begin{lstlisting}
+always @ (posedge clock) a <= b;
+always @ (posedge clock) b <= a;
+\end{lstlisting}
+Use the procedural assignment operator ($=$) in level-sensitive behaviors and the nonblocking assignment operator ($<=$) in edge-sensitive behaviors to avoid race conditions in sequential machines.
+\subsection*{Example (without race):}\vspace{-10pt}
+\begin{lstlisting}
+always @ (posedge clock) 
+        state <= next_state;
+always @ (state or inputs)
+        case(state)
+                state_0: begin next_state = state_5; ...
+                end
+        endcase
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Functions}\vspace{-10pt}
+May invoke another function; may not invoke a task. Executes with zero delay time.\\
+May not contain delay control (\#), event control (@), or \textbf{wait}.\\
+Must have at least one input argument.\\
+May not have \textbf{output} or \textbf{input} arguments.\\
+Function name serves as a placeholder for a single returned value.
+\subsection*{Example:}\vspace{-10pt}
+\begin{lstlisting}
+value = adder(a,b);
+...
+function [4:0] adder;
+        input [3:0] a,b;
+        adder = a + b;
+endfunction
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Tasks}\vspace{-10pt}
+May invoke other tasks and other functions.\\
+May contain delay control(\#), event control (@), and \textbf{wait}.\\
+May have zero or more arguments having mode \textbf{input, output, inout}.\\
+Passes values by its arguments.
+\subsection*{Example:}\vspace{-10pt}
+\begin{lstlisting}
+adder (sum, a, b);
+...
+task adder;
+        output [4:0] sum;
+        input [3:0] a, b;
+        sum = a + b;
+endtask
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Selected Compiler Directives}\vspace{-10pt}
+\begin{lstlisting}
+`define width = 16;
+`include .../project_header.v
+`timescale = 100ns/1ns  // time_units / precision
+`ifdef ... `else ... `endif
+\end{lstlisting}
+\subsection*{Example:}\vspace{-10pt}
+\begin{lstlisting}
+module or_model (y, a, b);
+        output y;
+        input a, b;
+        `ifdef cont_assign 
+                // uses continuous assignment
+                assign y = a | b;
+        `else
+                or G1 (y, a, b); // uses primitive
+        `endif
+endmodule       
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Simulation Output}\vspace{-10pt}
+\begin{lstlisting}
+$display ("string_of_info %d", variable);
+integer K;
+initial K = $fopen ("output_file");
+always @ (event_control expression) // dump data
+begin
+        $fdisplay (K, "%h"', data[7:0]);
+        ...
+        $fclose ("output_file");
+        $monitor ($time, "out_1=%b,out_2=%b",out_1,out_2);
+        $monitor (K,"some_value=%h",address[15:0]);
+        $monitoron;
+        $monitoroff;
+end
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Simulation Data Control}\vspace{-10pt}
+\begin{lstlisting}
+initial begin
+        // dump simulation data into my_data.dump:
+        $dumpfile("my_data.dump");
+        // dump all signals:
+        $dumpvars;
+        // dump variables in module top:
+        $dumpvars(1,top);
+        // dump variables 2 levels below top.mod1:
+        $dumpvars(2,top.mod1);
+        // stop dump after 1000 time units:
+        #1000 $dumpoff;
+        // start/restart dump after 500 time units:
+        #500 $dumpon;
+        // suspend simulation:
+        $stop;
+        // terminate simulation after 1000 time units:
+        #1000 $finish;
+end
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Parameter Redefinition}
+\subsection*{In-line (instance-based)}\vspace{-10pt}
+\begin{lstlisting}
+module Something();
+        parameter size = 4;
+        parameter width = 8;
+        ...
+endmodule
+...
+Something #(8,32) M1();
+...
+\end{lstlisting}\vspace{-10pt}
+\subsection*{Indirect (hierarchical dereferencing):}\vspace{-10pt}
+\begin{lstlisting}
+module Annotate();
+        ...
+        defparam .Something.width = 16;
+        ...
+endmodule
+\end{lstlisting}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Constructs to Avoid in Synthesis}\vspace{-10pt}
+\begin{itemize} \itemsep0pt \parskip0pt \parsep0pt
+        \item           \textbf{time, real, realtime} variables
+        \item           named \textbf{event}
+        \item           \textbf{triand, trior, tri0, tri1} nets
+        \item           vector ranges for integers
+        \item           single-pass (\textbf{initial}) behavior
+        \item           \textbf{assign ... deassign} procedural continuous assignment
+        \item           \textbf{force ... release} procedural continuous assignment
+        \item           \textbf{fork ... join} block (parallel activity flow)
+        \item           \textbf{defparam} parameter substitution
+        \item           Operators: Modulus(\textbf{\%}) and Division(\textbf{/}), except for division by 2%, or modulus 2
+        \item           ===, !===
+        \item           Primitives: \textbf{pullup, pulldown, tranif0, tranif1, rtran, rtranif0, rtranif1}
+        \item           Hierarchical pathnames
+        \item           Compiler directives
+\end{itemize}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\begin{center}
+\line(1,0){250}\\
+%\end{center}
+This material is used while creating the current document:
+\begin{enumerate} \itemsep0pt \parskip0pt \parsep0pt
+        \item   \textbf{IEEE 1364 Verilog-2001 Standard description}.
+        \item   \textbf{"Advanced Digital Design with the Verilog HDL" by Michael D. Ciletti}
+\end{enumerate}
+
+\end{document}
+

@@ -1,0 +1,12 @@
+# Ignore temporary files (anything ending in ~ or #)
+*~
+*\#
+
+# Ignore LaTeX generated files (including output .pdf)
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.ps
+*.log
+*.pdf
